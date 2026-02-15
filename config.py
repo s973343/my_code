@@ -25,8 +25,8 @@ USER_DESCRIPTION = "A video showing a movie schene"
 
 NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY")
 if not NEBIUS_API_KEY:
-    raise ValueError("[ERROR] NEBIUS_API_KEY is missing! Please create a .env file in this folder with: NEBIUS_API_KEY=your_key_here")
+    raise ValueError("❌ NEBIUS_API_KEY is missing! Please create a .env file in this folder with: NEBIUS_API_KEY=your_key_here")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 if not GROQ_API_KEY:
-    print("[WARN] GROQ_API_KEY is missing. RAG Query features might fail.")
+    print("⚠️ Warning: GROQ_API_KEY is missing. RAG Query features might fail.")

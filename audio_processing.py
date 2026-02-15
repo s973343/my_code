@@ -5,7 +5,7 @@ import librosa
 import soundfile as sf
 from config import VIDEO_INPUT, AUDIO_OUTPUT, WHISPER_MODEL
 
-def extract_and_transcribe_whisper(return_segments=False):
+def extract_and_transcribe(return_segments=False):
     print("-> Extracting and Transcribing Audio...")
     if not os.path.exists("data"):
         os.makedirs("data")
@@ -113,86 +113,3 @@ def extract_and_transcribe_whisper(return_segments=False):
             "formatted": formatted_segments
         }
     return transcript
-
-
-def extract_and_transcribe_yamnet(audio_path=None, speech_threshold=0.5):
-    """
-    Classify an audio track as Speech or Non-Speech using YAMNet.
-
-    This function is standalone and does not modify the existing
-    extract_and_transcribe_whisper() pipeline.
-
-    Args:
-        audio_path (str | None): Optional audio file path. If not provided,
-            audio is extracted from VIDEO_INPUT into AUDIO_OUTPUT first.
-        speech_threshold (float): Minimum ratio of speech-like frames
-            required to classify as "Speech".
-
-    Returns:
-        dict: Classification summary and frame-level statistics.
-    """
-    try:
-        import numpy as np
-        import tensorflow as tf
-        import tensorflow_hub as hub
-    except ImportError as exc:
-        raise ImportError(
-            "YAMNet dependencies are missing. Install tensorflow and tensorflow_hub."
-        ) from exc
-
-    if audio_path is None:
-        # Reuse configured extraction target to keep behavior consistent.
-        ffmpeg.input(VIDEO_INPUT).output(AUDIO_OUTPUT, acodec="libmp3lame").run(
-            overwrite_output=True, quiet=True
-        )
-        audio_path = AUDIO_OUTPUT
-
-    waveform, sr = librosa.load(audio_path, sr=16000, mono=True)
-    if waveform.size == 0:
-        return {
-            "classification": "Non-Speech",
-            "speech_ratio": 0.0,
-            "speech_frames": 0,
-            "total_frames": 0,
-            "speech_threshold": speech_threshold,
-            "audio_path": audio_path,
-        }
-
-    yamnet_model = hub.load("https://tfhub.dev/google/yamnet/1")
-    class_map_path = yamnet_model.class_map_path().numpy().decode("utf-8")
-
-    class_names = []
-    with open(class_map_path, "r", encoding="utf-8") as f:
-        next(f)  # skip header: index,mid,display_name
-        for line in f:
-            parts = line.strip().split(",")
-            class_names.append(parts[-1].strip().lower())
-
-    scores, _, _ = yamnet_model(tf.convert_to_tensor(waveform, dtype=tf.float32))
-    scores_np = scores.numpy()
-    top_class_idx = np.argmax(scores_np, axis=1)
-    top_labels = [class_names[idx] for idx in top_class_idx]
-
-    speech_like_keywords = (
-        "speech",
-        "conversation",
-        "narration",
-        "monologue",
-        "babbling",
-    )
-    speech_frames = sum(
-        any(keyword in label for keyword in speech_like_keywords)
-        for label in top_labels
-    )
-    total_frames = len(top_labels)
-    speech_ratio = (speech_frames / total_frames) if total_frames else 0.0
-    classification = "Speech" if speech_ratio >= speech_threshold else "Non-Speech"
-
-    return {
-        "classification": classification,
-        "speech_ratio": round(float(speech_ratio), 3),
-        "speech_frames": int(speech_frames),
-        "total_frames": int(total_frames),
-        "speech_threshold": float(speech_threshold),
-        "audio_path": audio_path,
-    }

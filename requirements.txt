@@ -1,0 +1,35 @@
+# Core AI & Embeddings
+transformers
+torch
+torchvision
+
+# Vector Database
+chromadb
+
+# Video & Image Processing
+opencv-python
+Pillow
+
+# Google Gemini API
+google-genai
+
+# Utilities
+numpy
+uuid
+
+groq
+python-dotenv
+scenedetect
+av
+opencv-python
+pandas
+openpyxl
+openai
+
+ffmpeg-python
+openai-whisper
+python-dotenv
+git+https://github.com/openai/CLIP.git
+librosa
+datasets
+ipython
